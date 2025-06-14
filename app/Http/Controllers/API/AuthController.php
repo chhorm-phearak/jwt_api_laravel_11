@@ -23,7 +23,7 @@ class AuthController extends Controller
         ]);
         if ($validator->fails()) {
             return response()->json([
-                'status' => false,
+                'success' => false,
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -34,7 +34,7 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
         ]);
         return response()->json([
-            'status' => true,
+            'success' => true,
             'message' => 'Registered Successfully',
             'data' => $user,
         ]);
@@ -52,24 +52,25 @@ class AuthController extends Controller
         ]);
         if ($validator->fails()) {
             return response()->json([
-                'status' => false,
+                'success' => false,
                 'errors' => $validator->errors(),
             ], 422);
         }
 
         if (!$token = auth()->attempt($validator->validated())) {
             return response()->json([
-                'status' => false,
+                'success' => false,
                 'erorrs' => 'Username & Password Invalid !',
             ], 401);
         }
+
         return $this->respondWithToken($token);
     }
 
     protected function respondWithToken($token)
     {
         return response()->json([
-            'status' => true,
+            'success' => true,
             'authorization' => [
                 'access_token' => $token,
                 'type_token' => 'Bearer',

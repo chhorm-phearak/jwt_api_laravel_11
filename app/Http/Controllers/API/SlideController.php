@@ -46,7 +46,7 @@ class SlideController extends Controller
         if (!$slide) {
             return response()->json([
                 'success' => false,
-                'message' => '404 - Not Found !',
+                'message' => '404 - Slide Not Found !',
                 'data' => [],
             ], 404);
         }
@@ -133,7 +133,7 @@ class SlideController extends Controller
     /**
      * Function: update
      * @param request
-     * @param id
+     * @param string id
      * method: POST
      */
     public function update(Request $request, string $id)
@@ -156,7 +156,7 @@ class SlideController extends Controller
         if (!$slide) {
             return response()->json([
                 'success' => false,
-                'errors' => '404 - Not Found !',
+                'errors' => '404 - Slide Not Found !',
             ], 404);
         }
 
