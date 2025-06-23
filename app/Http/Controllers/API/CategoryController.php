@@ -16,17 +16,18 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        $categories = Category::orderBy('id', 'DESC')->get();
-        $data = [];
-        foreach ($categories as $category) {
-            $data[] = [
-                'id' => $category->id,
-                'name' => $category->name,
-                'code' => $category->code,
-                'description' => $category->description,
-                'images' => ($category->images != null) ? asset('uploads/category_images/' . $category->images) : 'Empty Image',
-            ];
-        }
+        // $categories = Category::orderBy('id', 'DESC')->get();
+        // $data = [];
+        // foreach ($categories as $category) {
+        //     $data[] = [
+        //         'id' => $category->id,
+        //         'name' => $category->name,
+        //         'code' => $category->code,
+        //         'description' => $category->description,
+        //         'images' => ($category->images != null) ? asset('uploads/category_images/' . $category->images) : 'Empty Image',
+        //     ];
+        // }
+        $categories = Category::get();
         return response()->json([
             'success' => true,
             'message' => 'Categories data fetched successfully',
@@ -66,8 +67,8 @@ class CategoryController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:50',
-            'code' => 'required|string|max:50',
-            'description' => 'required|string|max:50',
+            'code' => 'required|string|max:20',
+            'description' => 'required|string|max:100',
             'images' => 'required|mimes:jpeg,png,jpg,gif,svg',
         ]);
         if ($validator->fails()) {
@@ -77,19 +78,21 @@ class CategoryController extends Controller
             ], 422);
         }
 
-        $category = new Category();
-
-        $category->name = $request->name;
-        $category->code = $request->code;
-        $category->description = $request->description;
+        $file_path = "";
 
         if ($request->file('images') != null) {
             $file_category = $request->file('images');
-            $image_category = date('d-m-y') . rand(000, 9999999) . '.' . $file_category->getClientOriginalExtension();
-            $file_category->move(public_path('uploads/category_images'), $image_category);
-            $category->images = $image_category;
+            $image_category = date('d-m-y-') . rand(000, 9999999) . '.' . $file_category->getClientOriginalExtension();
+            $file_category->move(public_path('uploads/category_images/'), $image_category);
+
+            $file_path = 'uploads/category_images/' . $image_category;
         }
-        $category->save();
+        $category = Category::create([
+            'name' => $request->name,
+            'code' => $request->code,
+            'description' => $request->description,
+            'images' => $file_path,
+        ]);
 
         return response()->json([
             'success' => true,
@@ -214,5 +217,34 @@ class CategoryController extends Controller
             'message' => 'Category deleted successfully',
             'data' => $category,
         ], 200);
+    }
+
+    /**
+     * Function: search
+     * @param request
+     * method: POST
+     */
+    public function search(Request $request)
+    {
+        $query = Category::query();
+        if ($request->has('search')) {
+            $category = $request->search;
+            $query->where('name', 'LIKE', "%{$category}%");
+            //->orWhere('description', 'LIKE', "%{$category}%")
+            //->orWhere('code', 'LIKE', "%{$category}%");
+        }
+        $searchCategory = $query->get();
+        if (!$searchCategory) {
+            return response()->json([
+                'success' => false,
+                'message' => '404 - Category Is Not Found !',
+            ], 404);
+        } else {
+            return response()->json([
+                'success' => true,
+                'message' => 'Search categories successfully',
+                'data' => $searchCategory,
+            ], 200);
+        }
     }
 }

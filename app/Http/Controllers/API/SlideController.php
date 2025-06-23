@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\Slide;
+use Illuminate\Auth\Events\Validated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Validator;
@@ -28,6 +29,7 @@ class SlideController extends Controller
                 'images' => ($slide->images != null) ? asset('uploads/slide_images/' . $slide->images) : 'Empty Image',
             ];
         }
+        //$slides = Slide::get();
         return response()->json([
             'success' => true,
             'message' => 'Slide data fetched successfully',
@@ -78,20 +80,22 @@ class SlideController extends Controller
             ], 422);
         }
 
-        $slide = new Slide();
-
-        $slide->title = $request->title;
-        $slide->description = $request->description;
-        $slide->link = $request->link;
-        $slide->status = $request->status;
+        $file_path = "";
 
         if ($request->file('images') != null) {
             $file_slide = $request->file('images');
-            $image_slide = date('d-m-y') . rand(000, 9999999) . '.' . $file_slide->getClientOriginalExtension();
-            $file_slide->move(public_path('uploads/slide_images'), $image_slide);
-            $slide->images = $image_slide;
+            $image_slide = date('d-m-y-') . rand(000, 9999999) . '.' . $file_slide->getClientOriginalExtension();
+            $file_slide->move(public_path('uploads/slide_images/'), $image_slide);
+
+            $file_path = 'uploads/slide_images/' . $image_slide;
         }
-        $slide->save();
+        $slide = Slide::create([
+            'title' => $request->title,
+            'description' => $request->description,
+            'link' => $request->link,
+            'status' => $request->status,
+            'images' => $file_path,
+        ]);
 
         return response()->json([
             'success' => true,

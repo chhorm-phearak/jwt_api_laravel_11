@@ -15,26 +15,24 @@ class ProductController extends Controller
      * Function: index
      * method: GET
      */
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::with(['category' => function ($query) {
-            $query->select('id', 'name');
-        }])->orderBy('id', 'DESC')->get();
-        $data = [];
-        foreach ($products as $product) {
-            $data[] = [
-                'id' => $product->id,
-                'name' => $product->name,
-                'description' => $product->description,
-                'price' => $product->price,
-                'category_id' => $product->category_id,
-                'images' => ($product->images != null) ? asset('uploads/product_images/' . $product->images) : 'Empty Image',
-            ];
+        $query = Product::query();
+
+        if ($request->has('search')) {
+            $searchTerm = $request->search;
+            $query->where('name', 'LIKE', "%{$searchTerm}%")
+                ->orwhere('description', 'LIKE', "%{$searchTerm}%")
+                ->orwhere('price', 'LIKE', "%{$searchTerm}%");
         }
+        //$products = Product::get();
+        $product = $query->with(['category' => function ($call) {
+            $call->select('id', 'name');
+        }])->get();
         return response()->json([
             'success' => true,
             'message' => 'Products data fetched successfully',
-            'data' => $products,
+            'data' => $product,
         ], 200);
     }
 
@@ -84,20 +82,22 @@ class ProductController extends Controller
             ], 422);
         }
 
-        $product = new Product();
-
-        $product->name = $request->name;
-        $product->description = $request->description;
-        $product->price = $request->price;
-        $product->category_id = $request->category_id;
+        $file_path = "";
 
         if ($request->file('images') != null) {
             $file_product = $request->file('images');
-            $image_product = date('d-m-y') . rand(000, 9999999) . '.' . $file_product->getClientOriginalExtension();
-            $file_product->move(public_path('uploads/product_images'), $image_product);
-            $product->images = $image_product;
+            $image_product = date('d-m-y-') . rand(000, 9999999) . '.' . $file_product->getClientOriginalExtension();
+            $file_product->move(public_path('uploads/product_images/'), $image_product);
+
+            $file_path = 'uploads/product_images/' . $image_product;
         }
-        $product->save();
+        $product = Product::create([
+            'name' => $request->name,
+            'description' => $request->description,
+            'price' => $request->price,
+            'category_id' => $request->category_id,
+            'images' => $file_path,
+        ]);
 
         return response()->json([
             'success' => true,
